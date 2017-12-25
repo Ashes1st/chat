@@ -1,4 +1,4 @@
-//
+ //
 //  client
 // 
 //  Created by Ashe_s_ on 03.12.2017.
@@ -28,7 +28,8 @@
 
 void *get_in_addr(struct sockaddr *sa)
 {
-    if(sa->sa_family == AF_INET){
+    if(sa->sa_family == AF_INET)
+    {
         return &(((struct sockaddr_in*)sa)->sin_addr);
     }
 
@@ -38,11 +39,11 @@ void *get_in_addr(struct sockaddr *sa)
 int main(int argc, char *argv[])
 {
 
-    fd_set client_fds;                          // главный список дескрипторов
+    fd_set master;                          // главный список дескрипторов
     fd_set use_fds;                             // временный список дескрипторов для селект
     int fdmax;                                  // максимальный номер дескриптора
 
-    FD_ZERO(&client_fds);
+    FD_ZERO(&master);
     FD_ZERO(&use_fds);
     
 
@@ -52,7 +53,8 @@ int main(int argc, char *argv[])
     char s[INET6_ADDRSTRLEN];
     char buffer[BUFFERSIZE];
 
-    if (argc != 4) {
+    if (argc != 4) 
+    {
         fprintf(stderr,"usage: nickname ip port\n");
         return 1; 
     }
@@ -76,18 +78,22 @@ int main(int argc, char *argv[])
 
 
 
-    if((rv = getaddrinfo(argv[2], PORT, &hints, &servinfo)) != 0){
+    if((rv = getaddrinfo(argv[2], PORT, &hints, &servinfo)) != 0)
+    {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
     
-    for( p = servinfo; p != NULL; p = p->ai_next ){
-        if( (sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1 ){
+    for( p = servinfo; p != NULL; p = p->ai_next )
+    {
+        if( (sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1 )
+        {
             perror("client: socket\n");
             continue;
         }                                                   
 
-        if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1){
+        if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
+        {
             close(sockfd);
             perror("client: connect\n");
             continue;
@@ -96,7 +102,8 @@ int main(int argc, char *argv[])
         break;
     }
 
-    if(p == NULL){
+    if(p == NULL)
+    {
         fprintf(stderr, "client: failed to connect\n");
         return 2;
     }
@@ -107,56 +114,61 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo);
 
-///*
-    FD_ZERO(&client_fds);
-    FD_SET(sockfd, &client_fds);
-    FD_SET(0, &client_fds);//stdin
+    FD_ZERO(&master);
+    FD_SET(sockfd, &master);
+    FD_SET(0, &master);//stdin
 
     fdmax = sockfd + 1;
 
     int n;
 
 
-    while (1) {
-       use_fds = client_fds;
+    while (1) 
+    {
+       use_fds = master;
        select(fdmax, &use_fds, NULL,NULL,NULL);
        
-       for(int fd = 0; fd < fdmax; fd++){
-          if(FD_ISSET(fd, &use_fds)){
-             if(fd == sockfd){   /*Accept data from open socket */
+       for(int fd = 0; fd < fdmax; fd++)
+       {
+          if(FD_ISSET(fd, &use_fds))
+          {
+             if(fd == sockfd)
+             {   /*Accept data from open socket */
+                
                 //printf("client - read\n");
                 //read data from open socket
                 memset(buffer, 0, BUFFERSIZE);
                 int result = read(sockfd, buffer, BUFFERSIZE);
                 buffer[result] = '\0';  /* Terminate string with null */
                 printf("%s", buffer);
-             } else if(fd == 0){ /*process keyboard activiy*/
-                //printf("%s", nickname);
-
-                //memset(nickname + nick_len, 0, sizeof BUFFERSIZE - nick_len);
-                //memset(buffer, 0, sizeof buffer);
+             
+             } else if(fd == 0)
+             { /*process keyboard activiy*/
                 memset(buffer, 0, sizeof buffer);
                 memset(nickname + nick_len, 0, (sizeof nickname) - nick_len);
                 fgets(buffer, BUFFERSIZE, stdin);
-                //char *all_msg = strcat(nickname, buffer);
-                //printf("%s\n",kb_buffer);
 
                 char *msg = strcat(nickname, buffer);
 
                 if(strcmp(buffer, "\n"))
                 {
-                    if (strcmp(buffer, "quit\n") == 0) {
+                    if (strcmp(buffer, "quit\n") == 0) 
+                    {
+                    
                         send(sockfd, msg, strlen(msg), 0);
                         printf("You're disconnect.\n");
                         close(sockfd); //close the current client
                         exit(0); //end program
+                    
                     } else if(strcmp(buffer, "/history\n") == 0)
                     {
                         write(sockfd, msg, strlen(msg));
                         read(sockfd, buffer, BUFFERSIZE);
+                        
                         int num = atoi(buffer);
-                        printf("\nvvvv   history    vvvv\n");
                         int k = 0;
+
+                        printf("\nvvvv   history    vvvv\n");
 
                         while(k < num)
                         {
@@ -172,33 +184,22 @@ int main(int argc, char *argv[])
                             {
                                 write(sockfd, doc_false, strlen(doc_false));
                             }
-
-                            /*
-                            if(t == 1)
-                            {
-                                printf("Sorry. Try again...\n");
-                            }else
-                            {
-                                printf("%s", buffer);
-                            }
-                            //memset(buffer, 0, sizeof buffer);
-                            */
                         }
+
                         printf("\n^^^^   history    ^^^^\n\n");
-                    } else {
-                        //printf("%s\n", msg);
+                    } else 
+                    {
                         send(sockfd, msg, strlen(msg), 0);   
                     }   
                     
                     memset(buffer, 0, sizeof buffer);
                     memset(nickname + nick_len, 0, (sizeof nickname) - nick_len);
-                    //memset(buffer + nick_len, 0, BUFFERSIZE - nick_len);  
                 }                                            
              }          
           }
        }      
      }
-//*/
+
 
     close(sockfd);
 
