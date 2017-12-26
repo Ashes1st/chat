@@ -189,7 +189,7 @@ int create_socket(int listener, char PORT[])
 		break;
 	}
 
-	if(p == NULL){
+	if( !p ){
 		fprintf(stderr, "server: failed to bind\n");
 		return -1;
 	}
