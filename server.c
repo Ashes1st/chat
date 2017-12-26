@@ -41,7 +41,7 @@ typedef struct Data
 
 void list_push(list **head, int sock)
 {
-    if((*head) == NULL)
+    if( !(*head) )
     {
         list *tmp = (list*) malloc(sizeof(list));
         tmp->next = NULL;
@@ -68,7 +68,7 @@ void list_pop(list **head, int sock)
         tmp = tmp->next;
     }
     
-    if(pred == NULL)
+    if(!pred)
     {
         (*head) = (*head)->next;
     }
@@ -574,7 +574,7 @@ int main(int argc, char *argv[])
 	if(result_join == 0)
 		printf("\nSuccess\n");
 	else
-		printf("\nFault\n", );
+		printf("\nFault\n");
 
 
 	// already free
