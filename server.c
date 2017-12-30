@@ -82,7 +82,6 @@ void list_pop(list **head, int sock)
 
 void sigchld_handler(int s)
 {
-	
 	while(waitpid(-1, NULL, WNOHANG) > 0);
 }
 
@@ -189,7 +188,7 @@ int create_socket(int listener, char PORT[])
 		break;
 	}
 
-	if( !p ){
+	if(p == NULL){
 		fprintf(stderr, "server: failed to bind\n");
 		return -1;
 	}
@@ -215,8 +214,8 @@ void kill_zombie()
 	}
 }
 
-/*
-void send_history(int socket, int krug, char *history, char *arg, char *buffer, int tec_pos_his, int len_his)
+
+void send_history(int socket, int krug, char * history, char * arg, char * buffer, int tec_pos_his, int len_his)
 {
 	if(krug == 0)
 	{
@@ -228,7 +227,7 @@ void send_history(int socket, int krug, char *history, char *arg, char *buffer, 
 
 		while(k < tec_pos_his)
 		{
-			write(socket, history[k], BUFFERSIZE);
+			write(socket, history  + k * BUFFERSIZE, BUFFERSIZE);
 			
 			int w = 1;
 			while(w == 1)
@@ -238,7 +237,7 @@ void send_history(int socket, int krug, char *history, char *arg, char *buffer, 
 				
 				if(strlen(buffer) < 5)
 				{
-					write(socket, history[k], BUFFERSIZE);
+					write(socket, history  + k * BUFFERSIZE, BUFFERSIZE);
 				}else
 				{
 					k++;
@@ -248,12 +247,12 @@ void send_history(int socket, int krug, char *history, char *arg, char *buffer, 
 		}
 	}else
 	{
-		write(socket, argv[2], strlen(argv[2]));
+		write(socket, arg, strlen(arg));
 
-		int t = tec_pos_his;
-		while(t < len_his)
+		int k = tec_pos_his;
+		while(k < len_his)
 		{
-			write(socket, history[k], BUFFERSIZE);
+			write(socket, history  + k * BUFFERSIZE, BUFFERSIZE);
 			
 			int w = 1;
 			while(w == 1)
@@ -263,20 +262,20 @@ void send_history(int socket, int krug, char *history, char *arg, char *buffer, 
 				
 				if(strlen(buffer) < 5)
 				{
-					write(socket, history[t], BUFFERSIZE);
+					write(socket, history  + k * BUFFERSIZE, BUFFERSIZE);
 				}else
 				{
-					t++;
+					k++;
 					w = 0;
 				}
 			}
 		}
 		
-		t = 0;
+		k = 0;
 
-		while(t < tec_pos_his)
+		while(k < tec_pos_his)
 		{
-			write(socket, history[t], BUFFERSIZE);
+			write(socket, history  + k * BUFFERSIZE, BUFFERSIZE);
 			
 			int w = 1;
 			while(w == 1)
@@ -286,17 +285,51 @@ void send_history(int socket, int krug, char *history, char *arg, char *buffer, 
 				read(socket, buffer, BUFFERSIZE);
 				if(strlen(buffer) < 5)
 				{
-					write(socket, history[t], BUFFERSIZE);
+					write(socket, history  + k * BUFFERSIZE, BUFFERSIZE);
 				}else
 				{
-					t++;
+					k++;
 					w = 0;
 				}
 			}
 		}
 	}
 }
-*/
+
+void set_history(char * history, int * tec_pos_his, char * buffer, int * krug, int * LEN_HIS)
+{
+	memmove(history + (*tec_pos_his) * BUFFERSIZE, buffer, BUFFERSIZE);
+	(*tec_pos_his)++;
+	if(*tec_pos_his == *LEN_HIS)
+	{
+		*tec_pos_his = 0;
+		*krug = 1;
+	}
+}
+
+void send_all(list *head, char *buffer, int nbytes, int listener, int tec_socket)
+{
+	list *tec_send;
+	tec_send = head;
+
+	int o = 1;
+
+	while(o)
+	{
+		if((tec_send->socket != listener) && (tec_send->socket != tec_socket))
+		{
+			if(write(tec_send->socket, buffer, nbytes) == -1)
+			{
+				perror("send");
+			}                                        
+		}
+
+		if(tec_send->next != NULL)
+			tec_send = tec_send->next;
+		else
+			o = 0;
+	}
+}
 
 void *accept_members(void *data);
 
@@ -357,11 +390,9 @@ int main(int argc, char *argv[])
 
 	list *head = (list*)malloc(sizeof(list));
 	list *tec = (list*)malloc(sizeof(list));
-	list *tec_send = (list*)malloc(sizeof(list));
 
 	head = NULL;
 	tec = NULL;
-	tec_send = NULL;
 
 	if(listen(listener, BACKLOG) == -1)
 	{
@@ -439,122 +470,15 @@ int main(int argc, char *argv[])
 					}
 					else if(strcmp(buffer + nbytes - strlen(HIS), HIS) == 0) //History
 					{
-						//send_history(tec->socket, krug, history, argv[2], tec_pos_his, LEN_HIS);
-						if(krug == 0)
-                        {
-                            const int lh = strlen(argv[2]);
-                            char ch[lh];
-                            itoa(tec_pos_his, ch);
-                            write(tec->socket, ch, strlen(ch));
-                            int i = 0;
-
-                            while(i < tec_pos_his)
-                            {
-                                write(tec->socket, history[i], BUFFERSIZE);
-
-                                int w = 1;
-                                while(w == 1)
-                                {
-                                    memset(buffer, 0, BUFFERSIZE);
-                                    read(tec->socket, buffer, BUFFERSIZE);
-                                    
-                                    if(strlen(buffer) < 5)
-                                    {
-                                        write(tec->socket, history[i], BUFFERSIZE);
-                                        printf("2: %s\n", history[i]);
-                                    }else
-                                    {
-                                        i++;
-                                        w = 0;
-                                    }
-                                }
-                            }
-                        }else
-                        {
-                            write(tec->socket, argv[2], strlen(argv[2]));
-
-                            int i = tec_pos_his;
-                            while(i < LEN_HIS)
-                            {
-                                write(tec->socket, history[i], BUFFERSIZE);
-                                
-                                int w = 1;
-                                while(w == 1)
-                                {
-                                    memset(buffer, 0, BUFFERSIZE);
-                                    read(tec->socket, buffer, BUFFERSIZE);
-                                    
-                                    if(strlen(buffer) < 5)
-                                    {
-                                        write(tec->socket, history[i], BUFFERSIZE);
-                                    }else
-                                    {
-                                        i++;
-                                        w = 0;
-                                    }
-                                }
-                            }
-                            
-                            i = 0;
-
-                            while(i < tec_pos_his)
-                            {
-                                write(tec->socket, history[i], BUFFERSIZE);
-                                
-                                int w = 1;
-                                while(w == 1)
-                                {
-
-                                    memset(buffer, 0, BUFFERSIZE);
-                                    read(tec->socket, buffer, BUFFERSIZE);
-                                    if(strlen(buffer) < 5)
-                                    {
-                                        write(tec->socket, history[i], BUFFERSIZE);
-                                    }else
-                                    {
-                                        i++;
-                                        w = 0;
-                                    }
-
-                                }
-                                //printf("%d - %s", e, history[k]);
-                            }
-                        }
+						send_history(tec->socket, krug, history[0], argv[2], buffer, tec_pos_his, LEN_HIS);
 					}
 					else
 					{
-						memmove(history[tec_pos_his], buffer, BUFFERSIZE);
-						tec_pos_his++;
-						if(tec_pos_his == LEN_HIS)
-						{
-							tec_pos_his = 0;
-							krug = 1;
-						}
+						set_history(history[0], &tec_pos_his, buffer, &krug, &LEN_HIS);
+						
+						printf("user %s", buffer);
 
-						tec_send = head;
-
-						printf("user %d say: %s", tec->socket, buffer);
-
-						int o = 1;
-							
-						while(o) //send all
-						{
-							if(FD_ISSET(tec_send->socket, &master))
-							{
-								if((tec_send->socket != listener) && (tec_send->socket != tec->socket))
-								{
-									if(write(tec_send->socket, buffer, nbytes) == -1)
-									{
-										perror("send");
-									}                                        
-								}
-							}
-
-							if(tec_send->next != NULL)
-								tec_send = tec_send->next;
-							else
-								o = 0;
-						}
+						send_all(head, buffer, nbytes, listener, tec->socket);
 					}
 				}
 			}
@@ -576,12 +500,6 @@ int main(int argc, char *argv[])
 	else
 		printf("\nFault\n");
 
-
-	// already free
-	//free(head);
-	//free(tec);
-	
-	free(tec_send);
 	free(data);
 
 	return 0;
