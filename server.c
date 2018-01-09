@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	printf("--socket %lu--\n", sizeof(list));
+	printf("--socket %d--\n", listener);
 
 
 	list *head = (list*)malloc(sizeof(list));
