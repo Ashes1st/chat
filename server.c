@@ -1,84 +1,37 @@
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <stdio.h> 
+
+#ifndef __STDLIB_H
+#define __STDLIB_H
+
 #include <stdlib.h> 
-#include <unistd.h> 
+
+#endif
+
+#ifndef __SET_H
+#define __SET_H
+
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#endif
+
 #include <errno.h> 
 #include <string.h> 
-#include <sys/types.h> 
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <netdb.h> 
 #include <arpa/inet.h> 
 #include <sys/wait.h> 
 #include <signal.h>
-#include <sys/time.h>
 #include <pthread.h>
+
+#include "list.h"
 
 #define BACKLOG 10      // Размер оереди для ожидающих подключения
 
 #define BUFFERSIZE 128
-
-
-typedef struct list
-{
-    int socket;
-    
-    struct list *next;
-} list;
-
-typedef struct Data
-{
-	int *run;
-	int listen;
-	int *fdmax;
-
-	struct list **head;
-	fd_set *master; 
-
-} Data;
-
-
-void list_push(list **head, int sock)
-{
-    if( !(*head) )
-    {
-        list *tmp = (list*) malloc(sizeof(list));
-        tmp->next = NULL;
-        tmp->socket = sock;
-        (*head) = tmp;
-    }else
-    {
-        list *tmp = (list*) malloc(sizeof(list));
-        tmp->next = (*head);
-        tmp->socket = sock;
-        (*head) = tmp;
-    }
-}
-
-void list_pop(list **head, int sock)
-{
-    list *tmp;
-    list *pred = NULL;
-    tmp = (*head);
-    
-    while(tmp->socket != sock)
-    {
-        pred = tmp;
-        tmp = tmp->next;
-    }
-    
-    if(!pred)
-    {
-        (*head) = (*head)->next;
-    }
-    else
-    {
-        pred->next = tmp->next;
-    }
-    
-    free(tmp);
-}
 
 void sigchld_handler(int s)
 {
@@ -175,9 +128,8 @@ int create_socket(int listener, char PORT[])
 		if(setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
 			perror("setsockopt");
 			exit(1);
-		}                                                   // Переподключаемся к процессам, которые после перезапуска ещё висят 
-															// и не дают создать новое 
-															// которые ещё висят в процессах
+		}
+		
 		if(bind(listener, p->ai_addr, p->ai_addrlen) == -1)
 		{
 			close(listener);
@@ -358,8 +310,8 @@ int main(int argc, char *argv[])
 	FD_ZERO(&master);
 	FD_ZERO(&use_fds);
 
-	int listener;                               // дескриптор слушаемого сокета
-	int new_fd;                                 // новопринятый дескриптор сокета
+	int listener = 0;                               // дескриптор слушаемого сокета
+	//int new_fd;                                 // новопринятый дескриптор сокета
 	//struct addrinfo hints, *servinfo, *p;
 	
 	
@@ -370,9 +322,6 @@ int main(int argc, char *argv[])
 	pthread_t thread;
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
-
-	
-	char ipstr[INET6_ADDRSTRLEN];
 
 	char buffer[BUFFERSIZE];
 	int nbytes;
@@ -558,13 +507,3 @@ void *accept_members(void *d)
 
 	pthread_exit(0);
 }
-
-
-
-
-
-
-
-
-
-
