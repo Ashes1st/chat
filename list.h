@@ -1,14 +1,9 @@
 #ifndef __LIST_H
 #define __LIST_H
 
-#ifndef __SET_H
-#define __SET_H
-
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#endif
 
 typedef struct list
 {
