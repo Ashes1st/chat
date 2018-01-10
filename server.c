@@ -1,6 +1,3 @@
-#include <sys/socket.h>
-#include <stdio.h> 
-
 #ifndef __STDLIB_H
 #define __STDLIB_H
 
@@ -17,6 +14,7 @@
 
 #endif
 
+#include <stdio.h> 
 #include <errno.h> 
 #include <string.h> 
 #include <sys/socket.h> 
